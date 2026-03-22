@@ -1,11 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import type { MouseEvent } from "react";
+import { HeaderAuth } from "#/auth/HeaderAuth";
 import { isLoggedIn } from "#/auth/fakeAuth";
 
 const primaryNavLinkClass =
   "border-b-2 border-transparent px-[0.05rem] py-[0.28rem] font-[650] text-[var(--ink-soft)] no-underline transition-colors duration-150 ease-in-out hover:text-[var(--ink-strong)]";
+
 const primaryNavLinkActiveClass =
   "border-b-2 border-[rgba(221,107,32,0.5)] px-[0.05rem] py-[0.28rem] font-[650] text-[var(--accent-strong)] no-underline transition-colors duration-150 ease-in-out hover:text-[var(--ink-strong)]";
+
 const disabledNavLinkClass =
   "cursor-not-allowed select-none opacity-45 hover:text-[var(--ink-soft)]";
 
@@ -45,6 +48,7 @@ export default function Header() {
           >
             Home
           </Link>
+
           <Link
             to="/new-joke"
             className={addJokeLinkClass}
@@ -55,6 +59,7 @@ export default function Header() {
           >
             Add Joke
           </Link>
+
           <Link
             to="/about"
             className={primaryNavLinkClass}
@@ -65,26 +70,7 @@ export default function Header() {
         </div>
 
         <div className="order-2 ml-auto flex items-center gap-2 text-sm sm:order-3">
-          <Link
-            to="/signin"
-            className="rounded-full border border-[#d9cbb3] bg-[#fffdf8] px-3 py-1.5 font-semibold text-[#6e5c47] no-underline transition-colors duration-150 hover:border-[#c8b393] hover:text-[#4b3b28]"
-            activeProps={{
-              className:
-                "rounded-full border border-[#c8b393] bg-[#fff8ea] px-3 py-1.5 font-semibold text-[#4b3b28] no-underline transition-colors duration-150",
-            }}
-          >
-            Signin
-          </Link>
-          <Link
-            to="/signup"
-            className="rounded-full border border-[#d78a41] bg-[linear-gradient(180deg,#ee9a49_0%,#d77420_100%)] px-3 py-1.5 font-semibold text-[#fff9f2] no-underline shadow-[0_6px_12px_rgba(180,83,9,0.2)] transition-[transform,box-shadow] duration-150 ease-in-out hover:-translate-y-px hover:shadow-[0_8px_14px_rgba(180,83,9,0.28)]"
-            activeProps={{
-              className:
-                "rounded-full border border-[#c46b1e] bg-[linear-gradient(180deg,#e38935_0%,#c66110_100%)] px-3 py-1.5 font-semibold text-[#fff9f2] no-underline shadow-[0_6px_12px_rgba(180,83,9,0.2)]",
-            }}
-          >
-            Signup
-          </Link>
+          <HeaderAuth />
         </div>
       </nav>
     </header>

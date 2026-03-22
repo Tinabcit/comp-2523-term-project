@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { SubmitEventHandler } from "react";
+import { loginUser, saveUser } from "#/auth/fakeAuth";
 
 interface AuthFormProps {
   mode: "signin" | "signup";
@@ -27,9 +28,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         password,
       };
 
-      localStorage.setItem("devjokesUser", JSON.stringify(user));
-      localStorage.setItem("isLoggedIn()", "true");
-
+      saveUser(user);
       alert("Account created successfully.");
       window.location.href = "/";
       return;
@@ -45,7 +44,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     const savedUser = JSON.parse(savedUserRaw);
 
     if (savedUser.email === email && savedUser.password === password) {
-      localStorage.setItem("isLoggedIn()", "true");
+      loginUser();
       alert("Signed in successfully.");
       window.location.href = "/";
     } else {
