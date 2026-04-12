@@ -1,19 +1,40 @@
-import type { CommentRow, JokeRow } from "#/server/db/schema";
-
-export type Joke = Pick<JokeRow, "id" | "question" | "answer" | "score"> & {
-  comments: CommentRow["body"][];
+export type Joke = {
+  id: number;
+  question: string;
+  answer: string;
+  score: number;
+  userId: string;
+  comments: string[];
 };
 
-export interface CreateJokeInput {
-  question: Joke["question"];
-  answer: Joke["answer"];
-}
+export type CreateJokeInput = {
+  question: string;
+  answer: string;
+  userId: string;
+};
 
-export interface VoteJokeInput {
-  id: Joke["id"];
+export type VoteJokeInput = {
+  id: number;
   delta: 1 | -1;
-}
+  userId: string;
+};
 
-export interface DeleteJokeInput {
-  id: Joke["id"];
-}
+export type DeleteJokeInput = {
+  id: number;
+  userId: string;
+};
+
+// client-side payloads
+export type VoteJokePayload = {
+  id: number;
+  delta: 1 | -1;
+};
+
+export type DeleteJokePayload = {
+  id: number;
+};
+
+export type CreateJokePayload = {
+  question: string;
+  answer: string;
+};

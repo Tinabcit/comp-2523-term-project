@@ -1,12 +1,22 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  deleteJokeMutation,
-  voteJokeMutation,
-  type DeleteJokeMutationVariables,
-} from "#/queries";
+import { deleteJokeMutation, voteJokeMutation } from "#/queries";
 import { deleteJoke, voteJoke } from "#/serverFunctions/jokeFns";
+import type { Joke } from "#/types";
+
+type VoteJokeMutationVariables = {
+  data: {
+    id: number;
+    delta: 1 | -1;
+  };
+};
+
+type DeleteJokeMutationVariables = {
+  data: {
+    id: number;
+  };
+};
 
 export function useOpenCommentsJoke() {
   const [openCommentsJokeId, setOpenCommentsJokeId] = useState<number | null>(
@@ -27,11 +37,23 @@ export function useOpenCommentsJoke() {
 }
 
 export function useVoteJoke() {
+  const queryClient = useQueryClient();
   const voteJokeServerFn = useServerFn(voteJoke);
 
-  const { mutate: mutateVote } = useMutation({
+  const { mutate: mutateVote } = useMutation<
+    Joke,
+    Error,
+    VoteJokeMutationVariables
+  >({
     ...voteJokeMutation,
-    mutationFn: voteJokeServerFn,
+    mutationFn: (variables) => voteJokeServerFn(variables),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["jokes"] });
+    },
+    onError: (error) => {
+      console.error("Vote error:", error);
+      alert(error.message);
+    },
   });
 
   const vote = (jokeId: number, delta: 1 | -1) => {
@@ -44,6 +66,7 @@ export function useVoteJoke() {
 }
 
 export function useDeleteJoke() {
+  const queryClient = useQueryClient();
   const deleteJokeServerFn = useServerFn(deleteJoke);
 
   const {
@@ -52,7 +75,14 @@ export function useDeleteJoke() {
     variables,
   } = useMutation<void, Error, DeleteJokeMutationVariables>({
     ...deleteJokeMutation,
-    mutationFn: deleteJokeServerFn,
+    mutationFn: (variables) => deleteJokeServerFn(variables),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["jokes"] });
+    },
+    onError: (error) => {
+      console.error("Delete error:", error);
+      alert(error.message);
+    },
   });
 
   const deleteById = (jokeId: number) => {

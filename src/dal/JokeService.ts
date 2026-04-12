@@ -4,9 +4,9 @@ import type {
   Joke,
   VoteJokeInput,
 } from "#/types";
-import { eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { DbClient } from "./db/client";
-import { commentsTable, jokesTable } from "./db/schema";
+import { commentsTable, jokesTable, votesTable } from "./db/schema";
 
 export class JokeService {
   constructor(private readonly db: DbClient) {}
@@ -21,7 +21,7 @@ export class JokeService {
           orderBy: (comment, { asc }) => [asc(comment.createdAt)],
         },
       },
-      orderBy: (joke, { asc }) => [asc(joke.createdAt)],
+      orderBy: [desc(jokesTable.score), desc(jokesTable.createdAt)],
     });
 
     return rows.map((row) => ({
@@ -29,6 +29,7 @@ export class JokeService {
       question: row.question,
       answer: row.answer,
       score: row.score,
+      userId: row.userId,
       comments: row.comments.map((comment) => comment.body),
     }));
   }
@@ -40,12 +41,14 @@ export class JokeService {
         question: input.question.trim(),
         answer: input.answer.trim(),
         score: 0,
+        userId: input.userId,
       })
       .returning({
         id: jokesTable.id,
         question: jokesTable.question,
         answer: jokesTable.answer,
         score: jokesTable.score,
+        userId: jokesTable.userId,
       });
 
     if (!insertedJoke) {
@@ -59,10 +62,44 @@ export class JokeService {
   }
 
   async voteJoke(input: VoteJokeInput): Promise<Joke> {
+    const existingVote = await this.db.query.votesTable.findFirst({
+      where: and(
+        eq(votesTable.jokeId, input.id),
+        eq(votesTable.userId, input.userId),
+      ),
+    });
+
+    if (!existingVote) {
+      await this.db.insert(votesTable).values({
+        jokeId: input.id,
+        userId: input.userId,
+        value: input.delta,
+      });
+    } else {
+      await this.db
+        .update(votesTable)
+        .set({
+          value: input.delta,
+        })
+        .where(
+          and(
+            eq(votesTable.jokeId, input.id),
+            eq(votesTable.userId, input.userId),
+          ),
+        );
+    }
+
+    const [scoreRow] = await this.db
+      .select({
+        totalScore: sql<number>`coalesce(sum(${votesTable.value}), 0)`,
+      })
+      .from(votesTable)
+      .where(eq(votesTable.jokeId, input.id));
+
     const [updatedJokeRow] = await this.db
       .update(jokesTable)
       .set({
-        score: sql<number>`${jokesTable.score} + ${input.delta}`,
+        score: scoreRow?.totalScore ?? 0,
       })
       .where(eq(jokesTable.id, input.id))
       .returning({
@@ -70,6 +107,7 @@ export class JokeService {
         question: jokesTable.question,
         answer: jokesTable.answer,
         score: jokesTable.score,
+        userId: jokesTable.userId,
       });
 
     if (!updatedJokeRow) {
@@ -84,15 +122,25 @@ export class JokeService {
       orderBy: (comment, { asc }) => [asc(comment.createdAt)],
     });
 
-    const updatedJoke = {
+    return {
       ...updatedJokeRow,
       comments: comments.map((comment) => comment.body),
     };
-
-    return updatedJoke;
   }
 
   async deleteJoke(input: DeleteJokeInput): Promise<void> {
+    const joke = await this.db.query.jokesTable.findFirst({
+      where: eq(jokesTable.id, input.id),
+    });
+
+    if (!joke) {
+      throw new Error("Joke not found.");
+    }
+
+    if (joke.userId !== input.userId) {
+      throw new Error("You can only delete your own joke.");
+    }
+
     const result = await this.db
       .delete(jokesTable)
       .where(eq(jokesTable.id, input.id));

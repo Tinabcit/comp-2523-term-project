@@ -13,6 +13,8 @@ interface JokesSectionProps {
   onCloseComments: () => void;
   onDelete: (jokeId: number) => void;
   deletingJokeId: number | null;
+  currentUserId: string | null;
+  isLoggedIn: boolean;
 }
 
 export function JokesSection({
@@ -26,6 +28,8 @@ export function JokesSection({
   onCloseComments,
   onDelete,
   deletingJokeId,
+  currentUserId,
+  isLoggedIn,
 }: JokesSectionProps) {
   if (!jokes.length) return null;
 
@@ -35,6 +39,7 @@ export function JokesSection({
         {showStar ? <Star className="h-4 w-4" fill="currentColor" /> : null}
         {title}
       </h3>
+
       <div className="space-y-4">
         {jokes.map((joke) => (
           <JokeCard
@@ -47,6 +52,8 @@ export function JokesSection({
             onCloseComments={onCloseComments}
             onDelete={onDelete}
             isDeleting={deletingJokeId === joke.id}
+            canVote={isLoggedIn}
+            canDelete={currentUserId === joke.userId}
           />
         ))}
       </div>

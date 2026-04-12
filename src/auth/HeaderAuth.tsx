@@ -1,44 +1,34 @@
-import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { getStoredUser, isLoggedIn, logoutUser } from "#/auth/fakeAuth";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { authClient } from "#/lib/auth-client";
 
 export function HeaderAuth() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [fullName, setFullName] = useState("");
+  const navigate = useNavigate();
+  const { data: session, isPending } = authClient.useSession();
 
-  useEffect(() => {
-    const syncAuth = () => {
-      const user = getStoredUser();
-      setLoggedIn(isLoggedIn());
-      setFullName(user?.fullName ?? "");
-    };
-
-    syncAuth();
-
-    window.addEventListener("auth-change", syncAuth);
-    window.addEventListener("storage", syncAuth);
-
-    return () => {
-      window.removeEventListener("auth-change", syncAuth);
-      window.removeEventListener("storage", syncAuth);
-    };
-  }, []);
-
-  const handleLogout = () => {
-    logoutUser();
-    window.location.href = "/";
+  const handleLogout = async () => {
+    await authClient.signOut();
+    navigate({ to: "/" });
   };
 
-  if (loggedIn) {
+  if (isPending) {
+    return <div className="text-sm text-[#7a6750]">Loading...</div>;
+  }
+
+  if (session?.user) {
+    const fullName =
+      (session.user as { fullName?: string; name?: string }).fullName ||
+      session.user.name ||
+      "User";
+
     return (
       <div className="flex items-center gap-3">
         <span className="text-sm font-medium text-[#4f3f2e]">
-          Hi, {fullName || "User"}
+          Hi, {fullName}
         </span>
         <button
           type="button"
           onClick={handleLogout}
-          className="rounded-xl px-3 py-2 font-semibold text-white bg-[#b45309]"
+          className="rounded-xl bg-[#b45309] px-3 py-2 font-semibold text-white"
         >
           Logout
         </button>

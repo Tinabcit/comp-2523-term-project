@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import {
   createJokeMutation,
@@ -6,6 +6,7 @@ import {
 } from "#/queries";
 import { createJoke } from "#/serverFunctions/jokeFns";
 import { useServerFn } from "@tanstack/react-start";
+import { authClient } from "#/lib/auth-client";
 import type { Joke } from "#/types";
 
 export const Route = createFileRoute("/new-joke")({
@@ -13,18 +14,20 @@ export const Route = createFileRoute("/new-joke")({
 });
 
 function NewJokePage() {
+  const { data: session, isPending: isSessionPending } = authClient.useSession();
   const navigate = useNavigate();
   const createJokeServerFn = useServerFn(createJoke);
+
   const { mutateAsync, isPending, error, reset } = useMutation<
     Joke,
     Error,
     CreateJokeMutationVariables
   >({
     ...createJokeMutation,
-    mutationFn: createJokeServerFn,
+    mutationFn: (variables) => createJokeServerFn(variables),
   });
 
-  const handleSubmit: React.SubmitEventHandler<HTMLFormElement> = async (
+  const handleSubmit: React.FormEventHandler<HTMLFormElement> = async (
     event,
   ) => {
     event.preventDefault();
@@ -44,9 +47,49 @@ function NewJokePage() {
 
       await navigate({ to: "/" });
     } catch {
-      // Error is surfaced via mutation state and rendered below the form.
+      // Error is shown below the form
     }
   };
+
+  if (isSessionPending) {
+    return (
+      <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-10 sm:pt-14">
+        <p className="text-(--ink-soft)">Loading...</p>
+      </main>
+    );
+  }
+
+  if (!session?.user) {
+    return (
+      <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-10 sm:pt-14">
+        <section className="rounded-[1.45rem] border border-(--line) bg-[radial-gradient(circle_at_92%_15%,rgba(47,143,127,0.16)_0,transparent_34%),linear-gradient(180deg,var(--surface-strong)_0%,#fff8ed_100%)] p-[clamp(1.1rem,3.1vw,1.9rem)] shadow-[0_18px_40px_rgba(137,91,33,0.1)] max-sm:rounded-[1.05rem]">
+          <h1 className="m-0 font-(--font-display) text-[clamp(2rem,5vw,3rem)] leading-[1.1] text-[#2f2518]">
+            Sign in to add a joke
+          </h1>
+
+          <p className="mt-[0.9rem] text-[1.1rem] text-(--ink-soft)">
+            Joke submission is available to signed-in users only.
+          </p>
+
+          <div className="mt-8 flex flex-wrap gap-4">
+            <Link
+              to="/signin"
+              className="inline-flex items-center justify-center rounded-[0.9rem] bg-[linear-gradient(180deg,#dd6b20_0%,#b45309_100%)] px-6 py-3 font-semibold text-[#fffaf2] shadow-[0_10px_18px_rgba(180,83,9,0.24)]"
+            >
+              Sign in
+            </Link>
+
+            <Link
+              to="/signup"
+              className="inline-flex items-center justify-center rounded-[0.9rem] border border-[#d8c7ab] bg-[#fffdfa] px-6 py-3 font-semibold text-[#5b4a38]"
+            >
+              Create account
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pb-12 pt-10 sm:pt-14">
@@ -54,9 +97,11 @@ function NewJokePage() {
         <p className="mb-2 mt-0 text-[0.78rem] font-black uppercase tracking-[0.09em] text-(--accent-strong)">
           Ship A Punchline
         </p>
+
         <h1 className="m-0 font-(--font-display) text-[clamp(1.9rem,5vw,2.6rem)] leading-[1.1]">
           Add a New Joke
         </h1>
+
         <p className="mt-[0.65rem] max-w-[54ch] text-(--ink-soft)">
           Drop in a setup and punchline. Once it saves, you will be redirected
           back to the collection.
@@ -98,13 +143,15 @@ function NewJokePage() {
               placeholder="Because..."
             />
           </div>
+
           <button
             type="submit"
             disabled={isPending}
             className="inline-flex w-fit cursor-pointer items-center self-start rounded-[0.72rem] border-0 bg-[linear-gradient(180deg,#dd6b20_0%,#b45309_100%)] px-4 py-[0.62rem] font-[740] tracking-[0.01em] text-[#fffaf2] shadow-[0_10px_18px_rgba(180,83,9,0.24)] transition-[transform,box-shadow] duration-150 ease-in-out hover:-translate-y-px hover:shadow-[0_12px_20px_rgba(180,83,9,0.32)] disabled:cursor-not-allowed disabled:opacity-56"
           >
-            Save Joke
+            {isPending ? "Saving..." : "Save Joke"}
           </button>
+
           {error ? (
             <p role="alert" className="mt-2 text-sm text-red-600">
               {error.message}

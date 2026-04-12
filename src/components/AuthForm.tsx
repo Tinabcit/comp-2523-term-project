@@ -1,54 +1,74 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import type { SubmitEventHandler } from "react";
-import { loginUser, saveUser } from "#/auth/fakeAuth";
+import { useState } from "react";
+import { authClient } from "#/lib/auth-client";
 
 interface AuthFormProps {
   mode: "signin" | "signup";
 }
 
 export function AuthForm({ mode }: AuthFormProps) {
-  const handleSubmit: SubmitEventHandler<HTMLFormElement> = (event) => {
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
     event.preventDefault();
+    setIsSubmitting(true);
 
-    const formData = new FormData(event.currentTarget);
+    try {
+      const formData = new FormData(event.currentTarget);
 
-    const fullName = formData.get("fullName")?.toString() ?? "";
-    const email = formData.get("email")?.toString().trim() ?? "";
-    const password = formData.get("password")?.toString() ?? "";
+      const fullName = formData.get("fullName")?.toString().trim() ?? "";
+      const email = formData.get("email")?.toString().trim() ?? "";
+      const password = formData.get("password")?.toString() ?? "";
 
-    if (!email || !password) {
-      alert("Please fill in email and password.");
-      return;
-    }
+      if (!email || !password) {
+        alert("Please fill in email and password.");
+        return;
+      }
 
-    if (mode === "signup") {
-      const user = {
-        fullName,
+      if (mode === "signup") {
+        if (!fullName) {
+          alert("Please enter your full name.");
+          return;
+        }
+
+        const { error } = await authClient.signUp.email({
+          name: fullName,
+          fullName,
+          email,
+          password,
+        });
+
+        if (error) {
+          console.error("Signup error:", error);
+          alert(error.message || JSON.stringify(error) || "Failed to create account. Please try again.");
+          return;
+        }
+
+        alert("Account created successfully.");
+        navigate({ to: "/" });
+        return;
+      }
+
+      const { error } = await authClient.signIn.email({
         email,
         password,
-      };
+      });
 
-      saveUser(user);
-      alert("Account created successfully.");
-      window.location.href = "/";
-      return;
-    }
+      if (error) {
+        console.error("Signin error:", error);
+        alert(error.message || JSON.stringify(error) || "Invalid email or password.");
+        return;
+      }
 
-    const savedUserRaw = localStorage.getItem("devjokesUser");
-
-    if (!savedUserRaw) {
-      alert("No account found. Please sign up first.");
-      return;
-    }
-
-    const savedUser = JSON.parse(savedUserRaw);
-
-    if (savedUser.email === email && savedUser.password === password) {
-      loginUser();
       alert("Signed in successfully.");
-      window.location.href = "/";
-    } else {
-      alert("Invalid email or password.");
+      navigate({ to: "/" });
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -113,6 +133,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             name="password"
             type="password"
             required
+            minLength={8}
             className="w-full rounded-xl border border-[#e2d7c4] bg-[#fffdfa] px-3.5 py-2.5 text-(--ink-strong) placeholder:text-[#a89276] focus:border-[rgba(221,107,32,0.55)] focus:outline-none focus:ring-2 focus:ring-[rgba(221,107,32,0.17)]"
             placeholder="••••••••"
           />
@@ -120,9 +141,14 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         <button
           type="submit"
-          className="mt-1 inline-flex w-full items-center justify-center rounded-xl border-0 bg-[linear-gradient(180deg,#dd6b20_0%,#b45309_100%)] px-4 py-2.5 font-semibold text-[#fffaf2] shadow-[0_8px_16px_rgba(180,83,9,0.24)] transition-[transform,box-shadow] duration-150 ease-in-out hover:-translate-y-px hover:shadow-[0_10px_20px_rgba(180,83,9,0.3)]"
+          disabled={isSubmitting}
+          className="mt-1 inline-flex w-full items-center justify-center rounded-xl border-0 bg-[linear-gradient(180deg,#dd6b20_0%,#b45309_100%)] px-4 py-2.5 font-semibold text-[#fffaf2] shadow-[0_8px_16px_rgba(180,83,9,0.24)] transition-[transform,box-shadow] duration-150 ease-in-out hover:-translate-y-px hover:shadow-[0_10px_20px_rgba(180,83,9,0.3)] disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {mode === "signin" ? "Sign in" : "Create account"}
+          {isSubmitting
+            ? "Please wait..."
+            : mode === "signin"
+              ? "Sign in"
+              : "Create account"}
         </button>
       </form>
 
