@@ -1,3 +1,4 @@
+// add the changes and make sure to work the changes and the code works with the correct paths.
 import { pgTable, serial, text, integer, timestamp, varchar } from "drizzle-orm/pg-core";
 
 // Users table

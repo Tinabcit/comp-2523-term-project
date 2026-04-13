@@ -1,3 +1,4 @@
+// add the changes and make sure to work the changes and the code works with the correct paths.
 import { relations } from "drizzle-orm";
 import {
   integer,
