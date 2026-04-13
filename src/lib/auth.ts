@@ -1,3 +1,4 @@
+// add the changes and make sure to import useFakeAuth from the correct path
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { tanstackStartCookies } from "better-auth/tanstack-start";

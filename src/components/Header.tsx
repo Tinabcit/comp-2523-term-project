@@ -1,3 +1,4 @@
+// add the changes and make sure to work.
 import { Link } from "@tanstack/react-router";
 import type { MouseEvent } from "react";
 import { HeaderAuth } from "#/auth/HeaderAuth";
