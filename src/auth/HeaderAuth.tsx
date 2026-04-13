@@ -1,3 +1,4 @@
+// add the changes and make sure to import useFakeAuth from the correct path .
 import { Link, useNavigate } from "@tanstack/react-router";
 import { authClient } from "#/lib/auth-client";
 
